@@ -25,10 +25,21 @@ app.post('/sendAlert', async (req, res) => {
     const tokens = tokensSnap.docs.map(doc => doc.data().token);
     if (!tokens.length) return res.status(404).json({ error: 'No tokens found' });
 
+    // In emulator mode, skip actual FCM send
+    const isEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
+    if (isEmulator) {
+      console.log('DEV EMULATOR MODE: Skipping FCM send to tokens:', tokens);
+      return res.json({ success: true, tokens, emulator: true });
+    }
+
     const message = {
       notification: {
         title: 'Gizmo Alert',
         body: `Glucose is ${glucose} mg/dL`,
+      },
+      data: {
+        glucose: glucose.toString(),
+        timestamp,
       },
     };
     const response = await admin.messaging().sendMulticast({ ...message, tokens });

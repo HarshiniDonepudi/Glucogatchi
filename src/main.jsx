@@ -2,8 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { saveToken } from './firebase-messaging.js';
+import { getMessaging, onMessage } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
@@ -18,29 +17,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// Request permission and get token
-Notification.requestPermission().then((permission) => {
-  if (permission === 'granted') {
-    getToken(messaging, { vapidKey: import.meta.env.VITE_VAPID_KEY })
-      .then((currentToken) => {
-        if (currentToken) {
-          saveToken(currentToken);
-        }
-      })
-      .catch((err) => console.error('Error getting token', err));
-  }
-});
-
 // Handle foreground messages
 onMessage(messaging, (payload) => {
   // Custom event for App to listen
   window.dispatchEvent(new CustomEvent('firebase-message', { detail: payload }));
 });
 
-// Register service worker
+// Register service workers
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js');
+    navigator.serviceWorker.register('/firebase-messaging-sw.js');
   });
 }
 
